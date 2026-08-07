@@ -480,6 +480,8 @@ function haversineKm(a, b){
   return 2 * R * Math.asin(Math.sqrt(s));
 }
 
+const TOYAMA_STATION = { lat: 36.7016, lng: 137.2137 };
+
 async function setTargetSchool(){
   const schoolName = document.getElementById('schoolSelect').value;
   const district = SCHOOL_DISTRICTS.find(d => d.school === schoolName);
@@ -517,7 +519,7 @@ async function setTargetSchool(){
     towns = Array.from({length: MAX_POINTS}, (_, i) => towns[Math.floor(i*step)]);
   }
 
-  const MAX_DISTANCE_KM = 12; // 学区は基本的にこの範囲内に収まる想定。これより離れた結果は誤ヒットとして除外
+  const MAX_DISTANCE_KM = haversineKm(TOYAMA_STATION, center) >= 7 ? 5 : 3; // 富山駅から7km以上離れた郊外の学校は5km圏内、それ以外は3km圏内で判定
   const points = [];
   let rejected = 0;
   for(let i = 0; i < towns.length; i++){
@@ -533,7 +535,7 @@ async function setTargetSchool(){
     await new Promise(r => setTimeout(r, 1100));
   }
 
-  progress.textContent = `完了：${points.length}/${towns.length}件を反映（${rejected}件は学校から離れすぎていたため除外）`;
+  progress.textContent = `完了：${points.length}/${towns.length}件を反映（判定範囲：学校から${MAX_DISTANCE_KM}km圏内／${rejected}件は離れすぎていたため除外）`;
   setTimeout(() => progress.classList.remove('show'), 5000);
 
   points.forEach(p => {
