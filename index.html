@@ -163,6 +163,39 @@
   .filter-row{display:flex; gap:8px; align-items:center; margin-bottom:12px; flex-wrap:wrap;}
   .filter-row select{padding:8px 10px; border:1.5px solid var(--line); border-radius:8px; font-size:13px; font-family:inherit; background:#FCFBF7;}
   .school-tag{font-size:11px; color:var(--navy); font-weight:700; background:#EFE9D6; padding:2px 8px; border-radius:6px; white-space:nowrap;}
+  .type-tag{font-size:11px; font-weight:700; padding:2px 8px; border-radius:6px; white-space:nowrap;}
+  .type-tag.house{background:#E3ECF3; color:var(--navy);}
+  .type-tag.land{background:#E9F0E1; color:#4B6B3A;}
+  .how-to-note{
+    font-size:12.5px; color:var(--slate); background:var(--cream); border:1px solid var(--line);
+    border-radius:8px; padding:10px 12px; margin-bottom:16px;
+  }
+  .how-to-note a{color:var(--navy); font-weight:700;}
+  .type-toggle{display:flex; gap:8px;}
+  .type-btn{
+    flex:1; display:flex; align-items:center; gap:6px; font-size:13.5px; font-weight:700;
+    padding:10px 12px; border:1.5px solid var(--line); border-radius:8px; cursor:pointer; background:#FCFBF7;
+  }
+  .type-btn input{accent-color:var(--gold);}
+  .type-btn.active{border-color:var(--gold); background:#FCF7E9; color:var(--navy);}
+  .ai-scan-box{
+    margin-top:14px; padding:16px; border-radius:10px;
+    background:#F5F1FA; border:1.5px solid #DED0F0;
+  }
+  .ai-scan-head{display:flex; align-items:center; gap:8px; margin-bottom:8px;}
+  .ai-scan-head h3{font-family:'Noto Serif JP',serif; font-size:14.5px; margin:0; color:#4A2E7A;}
+  .ai-badge{font-size:10px; font-weight:900; background:#7B4FC9; color:#fff; padding:1px 7px; border-radius:999px;}
+  .ai-scan-note{font-size:12px; color:#5B4A78; margin-bottom:10px; line-height:1.6;}
+  .ai-scan-note strong{color:#4A2E7A;}
+  .ai-result-item{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    background:#fff; border:1px solid #E4D9F2; border-radius:8px; padding:8px 12px; margin-top:8px; font-size:13px;
+  }
+  .ai-result-item .meta{color:var(--slate); font-size:11.5px;}
+  .ai-conf{font-size:10.5px; font-weight:700; padding:1px 7px; border-radius:999px; margin-right:6px;}
+  .ai-conf.high{background:#F6D9D3; color:#A13B2A;}
+  .ai-conf.mid{background:#FBEBD0; color:#9A6A18;}
+  .ai-conf.low{background:#E7E7E7; color:#666;}
 
   .checklist{
     display:grid;
@@ -277,6 +310,22 @@
 
     <div id="mapCanvas"></div>
 
+    <div class="ai-scan-box">
+      <div class="ai-scan-head">
+        <h3>AIスキャン（試作版）</h3>
+        <span class="ai-badge">β</span>
+      </div>
+      <div class="ai-scan-note">
+        対象学区の航空写真をAIが一枚ずつ確認し、空き地・劣化した空き家らしき場所を候補として自動でピン留めします。<strong>AIの一次判定です。誤検出・見逃しがあります。必ず地理院地図やStreet Viewで現地確認してから登録してください。</strong>
+      </div>
+      <div class="toolbar">
+        <button class="btn-primary" id="aiScanBtn" onclick="startAiScan()">この学区をAIでスキャン</button>
+        <button class="btn-danger" id="aiCancelBtn" onclick="cancelAiScan()" style="display:none;">中断する</button>
+      </div>
+      <div class="progress-text" id="aiScanProgress"></div>
+      <div id="aiResultsList"></div>
+    </div>
+
     <div class="map-hint" style="margin-top:10px;">
       より鮮明な航空写真で屋根の劣化・雑草の繁茂を確認したい場合は
       <a href="https://maps.gsi.go.jp/" target="_blank" rel="noopener">地理院地図（国土地理院）</a> を別タブで開いて併用してください。
@@ -297,11 +346,23 @@
     <div class="lookup-result show" id="targetBanner" style="margin-bottom:16px;">
       対象学区が未設定です。上のセクションで今月の対象学区を選んでください。
     </div>
+    <div class="how-to-note">
+      使い方：セクション01の地図・航空写真（<a href="https://maps.gsi.go.jp/" target="_blank" rel="noopener">地理院地図</a>）を見ながら、対象学区の中を実際に見て回ってください。空き地・空き家らしき場所を見つけたら、その都度ここに登録します。
+    </div>
     <div id="addForm">
       <div class="row">
         <div>
-          <label>住所・目印（例：〇〇町2-3付近 / 交差点の北側の空き家）</label>
-          <input type="text" id="inpAddress" placeholder="住所または目印を入力">
+          <label>種別</label>
+          <div class="type-toggle">
+            <label class="type-btn active" id="typeBtnHouse"><input type="radio" name="propType" value="house" checked onchange="onTypeChange()"> 空き家（建物あり）</label>
+            <label class="type-btn" id="typeBtnLand"><input type="radio" name="propType" value="land" onchange="onTypeChange()"> 空き地（更地）</label>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>住所・目印（例：〇〇町2-3付近 / 交差点の北側）</label>
+          <input type="text" id="inpAddress" placeholder="見つけた場所の住所または目印を入力">
         </div>
       </div>
       <div class="checklist" id="checklist"></div>
@@ -323,6 +384,12 @@
     <div class="filter-row">
       <label style="margin:0;">小学校区で絞り込み：</label>
       <select id="schoolFilter" onchange="render()"><option value="">すべて表示</option></select>
+      <label style="margin:0;">種別で絞り込み：</label>
+      <select id="typeFilter" onchange="render()">
+        <option value="">すべて表示</option>
+        <option value="house">空き家</option>
+        <option value="land">空き地</option>
+      </select>
     </div>
     <div style="overflow-x:auto;">
       <table id="resultTable">
@@ -330,6 +397,7 @@
           <tr>
             <th>優先度</th>
             <th>スコア</th>
+            <th>種別</th>
             <th>住所・目印</th>
             <th>小学校区</th>
             <th>チェック項目</th>
@@ -481,6 +549,9 @@ function haversineKm(a, b){
 }
 
 const TOYAMA_STATION = { lat: 36.7016, lng: 137.2137 };
+let currentCenter = null;
+let currentDistrictPoints = [];
+let currentMaxDistanceKm = 3;
 
 async function setTargetSchool(){
   const schoolName = document.getElementById('schoolSelect').value;
@@ -490,6 +561,7 @@ async function setTargetSchool(){
   targetSchool = schoolName;
   updateTargetBanner();
   document.getElementById('schoolFilter').value = schoolName;
+  clearAiResults();
   render();
 
   const progress = document.getElementById('schoolProgress');
@@ -556,25 +628,263 @@ async function setTargetSchool(){
     }).addTo(markerLayer);
     map.setView([center.lat, center.lng], 14);
   }
+
+  // AIスキャン用に、この学区の中心とジオコーディング済みの点群を保存
+  currentCenter = center;
+  currentDistrictPoints = points;
+  currentMaxDistanceKm = MAX_DISTANCE_KM;
 }
 
-const CHECK_ITEMS = [
-  { id:'roof',    label:'屋根の劣化・破損（色ムラ・欠損）', weight:3 },
-  { id:'tilt',    label:'建物の傾き・老朽化が見える',       weight:3 },
-  { id:'weed',    label:'雑草・樹木が敷地から繁茂',         weight:2 },
-  { id:'wall',    label:'外壁の劣化・剥落',                 weight:2 },
-  { id:'window',  label:'窓の破損・雨戸が閉めっぱなし',     weight:2 },
-  { id:'meter',   label:'電気・水道メーターに使用感がない', weight:2 },
-  { id:'mail',    label:'郵便受けが溢れている／広告放置',   weight:2 },
-  { id:'car',     label:'駐車場に車両の出入りが見られない', weight:1 },
-  { id:'rumor',   label:'近隣で空き家と噂されている',       weight:1 },
-];
+// ---- AIスキャン（試作版） ----
+let aiScanLayer = null;
+let aiCancelFlag = false;
+let aiCandidates = [];
+const AI_MAX_TILES = 300;
+
+function lon2tileX(lon, z){ return Math.floor((lon+180)/360*Math.pow(2,z)); }
+function lat2tileY(lat, z){
+  const rad = lat*Math.PI/180;
+  return Math.floor((1-Math.log(Math.tan(rad)+1/Math.cos(rad))/Math.PI)/2*Math.pow(2,z));
+}
+function tile2lon(x, z){ return x/Math.pow(2,z)*360-180; }
+function tile2lat(y, z){
+  const n = Math.PI - 2*Math.PI*y/Math.pow(2,z);
+  return 180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n)));
+}
+
+function computeDistrictBBox(){
+  if(currentDistrictPoints.length >= 3){
+    const lats = currentDistrictPoints.map(p=>p.lat), lngs = currentDistrictPoints.map(p=>p.lng);
+    let minLat=Math.min(...lats), maxLat=Math.max(...lats), minLng=Math.min(...lngs), maxLng=Math.max(...lngs);
+    const padLat = (maxLat-minLat)*0.15 || 0.01;
+    const padLng = (maxLng-minLng)*0.15 || 0.01;
+    return { minLat:minLat-padLat, maxLat:maxLat+padLat, minLng:minLng-padLng, maxLng:maxLng+padLng };
+  }
+  // 目安点が少ない場合は中心＋半径から矩形を作る
+  const r = currentMaxDistanceKm / 111; // 度への概算換算
+  return {
+    minLat: currentCenter.lat - r, maxLat: currentCenter.lat + r,
+    minLng: currentCenter.lng - r/Math.cos(currentCenter.lat*Math.PI/180),
+    maxLng: currentCenter.lng + r/Math.cos(currentCenter.lat*Math.PI/180)
+  };
+}
+
+function buildTileList(bbox, zoom){
+  const xMin = lon2tileX(bbox.minLng, zoom), xMax = lon2tileX(bbox.maxLng, zoom);
+  const yMin = lat2tileY(bbox.maxLat, zoom), yMax = lat2tileY(bbox.minLat, zoom); // 緯度は北が小さいy
+  const tiles = [];
+  for(let x = xMin; x <= xMax; x++){
+    for(let y = yMin; y <= yMax; y++){
+      tiles.push({ x, y, z: zoom });
+    }
+  }
+  return tiles;
+}
+
+function chooseZoomAndTiles(bbox){
+  for(let zoom = 17; zoom >= 12; zoom--){
+    const tiles = buildTileList(bbox, zoom);
+    if(tiles.length <= AI_MAX_TILES) return { zoom, tiles };
+  }
+  // 最低ズームでも収まらない場合は間引く
+  const tiles = buildTileList(bbox, 12);
+  const step = Math.ceil(tiles.length / AI_MAX_TILES);
+  return { zoom: 12, tiles: tiles.filter((_, i) => i % step === 0) };
+}
+
+async function fetchTileAsBase64(x, y, z){
+  const url = `https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/${z}/${x}/${y}.jpg`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('tile fetch failed');
+  const blob = await res.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+const AI_SCAN_PROMPT = `この画像は富山市内のある区画の航空写真です。次の2種類を探してください。
+1. 空き地（建物がなく、雑草や更地の状態が明らかな区画）
+2. 空き家の可能性がある建物（屋根の色ムラ・破損、周囲の雑草放置など、明らかに劣化・放置されている様子の建物）
+該当する候補が見つかった場合、それぞれについて画像内でのおおよその相対位置（左上を0,0、右下を1,1としたx,y、小数）、種類（"land"または"house"）、確信度（"high"/"mid"/"low"）、簡単な理由（日本語15文字程度）を含むJSON配列で返してください。
+見つからない場合は空配列 [] を返してください。
+出力はJSON配列のみとし、説明文やコードブロックの記号は一切含めないでください。`;
+
+async function analyzeTile(x, y, z){
+  const base64 = await fetchTileAsBase64(x, y, z);
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
+          { type: 'text', text: AI_SCAN_PROMPT }
+        ]
+      }]
+    })
+  });
+  const data = await res.json();
+  const textBlock = (data.content || []).find(b => b.type === 'text');
+  if(!textBlock) return [];
+  const cleaned = textBlock.text.replace(/```json|```/g, '').trim();
+  try{
+    const arr = JSON.parse(cleaned);
+    return Array.isArray(arr) ? arr : [];
+  } catch(e){
+    return [];
+  }
+}
+
+function clearAiResults(){
+  aiCandidates = [];
+  if(aiScanLayer){ map.removeLayer(aiScanLayer); aiScanLayer = null; }
+  const list = document.getElementById('aiResultsList');
+  if(list) list.innerHTML = '';
+  const p = document.getElementById('aiScanProgress');
+  if(p) p.classList.remove('show');
+}
+
+function cancelAiScan(){
+  aiCancelFlag = true;
+}
+
+function renderAiResultItem(cand, index){
+  const list = document.getElementById('aiResultsList');
+  const div = document.createElement('div');
+  div.className = 'ai-result-item';
+  div.innerHTML = `
+    <div>
+      <span class="ai-conf ${cand.confidence}">${cand.confidence === 'high' ? '確信度高' : cand.confidence === 'mid' ? '確信度中' : '確信度低'}</span>
+      <span class="type-tag ${cand.type}">${typeLabel(cand.type)}</span>
+      <span class="meta">　${escapeHtml(cand.reason || '')}</span>
+    </div>
+    <button class="btn-ghost" style="padding:6px 12px; font-size:12px;" onclick="useAiCandidate(${index})">登録フォームへ</button>
+  `;
+  list.appendChild(div);
+}
+
+function useAiCandidate(index){
+  const cand = aiCandidates[index];
+  if(!cand) return;
+  document.getElementById('inpAddress').value = `緯度${cand.lat.toFixed(5)}, 経度${cand.lng.toFixed(5)} 付近（AI検出・要現地確認）`;
+  const radio = document.querySelector(`input[name=propType][value="${cand.type === 'land' ? 'land' : 'house'}"]`);
+  if(radio){ radio.checked = true; onTypeChange(); }
+  map.setView([cand.lat, cand.lng], 18);
+  L.circleMarker([cand.lat, cand.lng], { radius:8, color:'#7B4FC9', fillColor:'#7B4FC9', fillOpacity:0.3 }).addTo(aiScanLayer);
+  document.getElementById('addForm').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+async function startAiScan(){
+  if(!targetSchool || !currentCenter){
+    alert('先に「今月の対象学区」を選んでください。');
+    return;
+  }
+  const bbox = computeDistrictBBox();
+  const { zoom, tiles } = chooseZoomAndTiles(bbox);
+
+  const proceed = confirm(
+    `${targetSchool}小学校区を約${tiles.length}枚の航空写真タイル（ズームレベル${zoom}）に分割してAI解析します。\n` +
+    `枚数によっては数分〜数十分かかります。開始しますか？`
+  );
+  if(!proceed) return;
+
+  aiCancelFlag = false;
+  clearAiResults();
+  aiScanLayer = L.layerGroup().addTo(map);
+
+  document.getElementById('aiScanBtn').style.display = 'none';
+  document.getElementById('aiCancelBtn').style.display = 'inline-block';
+  const progress = document.getElementById('aiScanProgress');
+  progress.classList.add('show');
+
+  let found = 0, failed = 0;
+  for(let i = 0; i < tiles.length; i++){
+    if(aiCancelFlag){
+      progress.textContent = `中断しました（${i}/${tiles.length}枚処理・${found}件検出）`;
+      break;
+    }
+    const t = tiles[i];
+    progress.textContent = `AI解析中… (${i+1}/${tiles.length}枚) 検出：${found}件`;
+    try{
+      const detections = await analyzeTile(t.x, t.y, t.z);
+      const lonW = tile2lon(t.x, t.z), lonE = tile2lon(t.x+1, t.z);
+      const latN = tile2lat(t.y, t.z), latS = tile2lat(t.y+1, t.z);
+      for(const d of detections){
+        if(typeof d.x !== 'number' || typeof d.y !== 'number') continue;
+        const lat = latN + d.y*(latS-latN);
+        const lng = lonW + d.x*(lonE-lonW);
+        const cand = {
+          lat, lng,
+          type: d.type === 'land' ? 'land' : 'house',
+          confidence: ['high','mid','low'].includes(d.confidence) ? d.confidence : 'low',
+          reason: (d.reason || '').slice(0, 40)
+        };
+        aiCandidates.push(cand);
+        const idx = aiCandidates.length - 1;
+        const color = cand.type === 'land' ? '#4B6B3A' : '#7B4FC9';
+        L.circleMarker([lat, lng], { radius:7, color, fillColor:color, fillOpacity:0.7 })
+          .addTo(aiScanLayer)
+          .bindPopup(`<b>${typeLabel(cand.type)}</b>（${cand.confidence}）<br>${escapeHtml(cand.reason)}<br><button onclick="useAiCandidate(${idx})">登録フォームへ</button>`);
+        renderAiResultItem(cand, idx);
+        found++;
+      }
+    } catch(e){
+      failed++;
+    }
+  }
+
+  if(!aiCancelFlag){
+    progress.textContent = `完了：${tiles.length}枚を解析し、${found}件の候補を検出しました（取得失敗：${failed}枚）`;
+  }
+  document.getElementById('aiScanBtn').style.display = 'inline-block';
+  document.getElementById('aiCancelBtn').style.display = 'none';
+}
+
+const CHECK_ITEMS_BY_TYPE = {
+  house: [
+    { id:'roof',    label:'屋根の劣化・破損（色ムラ・欠損）', weight:3 },
+    { id:'tilt',    label:'建物の傾き・老朽化が見える',       weight:3 },
+    { id:'weed',    label:'雑草・樹木が敷地から繁茂',         weight:2 },
+    { id:'wall',    label:'外壁の劣化・剥落',                 weight:2 },
+    { id:'window',  label:'窓の破損・雨戸が閉めっぱなし',     weight:2 },
+    { id:'meter',   label:'電気・水道メーターに使用感がない', weight:2 },
+    { id:'mail',    label:'郵便受けが溢れている／広告放置',   weight:2 },
+    { id:'car',     label:'駐車場に車両の出入りが見られない', weight:1 },
+    { id:'rumor',   label:'近隣で空き家と噂されている',       weight:1 },
+  ],
+  land: [
+    { id:'weed2',    label:'雑草・樹木が敷地全体に繁茂',           weight:3 },
+    { id:'fence',    label:'フェンス・囲いの老朽化・破損',         weight:2 },
+    { id:'sign',     label:'「売地」等の看板が古い・色あせている', weight:2 },
+    { id:'unused',   label:'長期間、車両や重機の出入りがない',     weight:2 },
+    { id:'boundary', label:'隣接地との境界が不明瞭',               weight:1 },
+    { id:'dump',     label:'ゴミの不法投棄・放置が見られる',       weight:2 },
+    { id:'shape',    label:'旗竿地・狭小地など使いにくい形状',     weight:1 },
+    { id:'rumor2',   label:'近隣で相続未処理・売却希望との噂',     weight:1 },
+  ]
+};
+let currentType = 'house';
 
 let candidates = [];
 
+function onTypeChange(){
+  const val = document.querySelector('input[name=propType]:checked').value;
+  currentType = val;
+  document.getElementById('typeBtnHouse').classList.toggle('active', val==='house');
+  document.getElementById('typeBtnLand').classList.toggle('active', val==='land');
+  initChecklist();
+}
+
 function initChecklist(){
   const box = document.getElementById('checklist');
-  box.innerHTML = CHECK_ITEMS.map(item => `
+  const items = CHECK_ITEMS_BY_TYPE[currentType];
+  box.innerHTML = items.map(item => `
     <label class="check-item">
       <input type="checkbox" data-id="${item.id}" data-weight="${item.weight}">
       <span>${item.label}</span>
@@ -591,6 +901,9 @@ function priorityOf(score){
 function priorityLabel(p){
   return p === 'high' ? '高' : (p === 'mid' ? '中' : '低');
 }
+function typeLabel(t){
+  return t === 'land' ? '空き地' : '空き家';
+}
 
 function addCandidate(){
   const address = document.getElementById('inpAddress').value.trim();
@@ -599,11 +912,12 @@ function addCandidate(){
     return;
   }
   const memo = document.getElementById('inpMemo').value.trim();
+  const items = CHECK_ITEMS_BY_TYPE[currentType];
   const checks = [];
   let score = 0;
   document.querySelectorAll('#checklist input[type=checkbox]').forEach(cb => {
     if(cb.checked){
-      const item = CHECK_ITEMS.find(i => i.id === cb.dataset.id);
+      const item = items.find(i => i.id === cb.dataset.id);
       checks.push(item.label);
       score += Number(cb.dataset.weight);
     }
@@ -613,7 +927,8 @@ function addCandidate(){
     id: Date.now(),
     address, memo, checks, score,
     priority: priorityOf(score),
-    school: targetSchool
+    school: targetSchool,
+    type: currentType
   });
 
   document.getElementById('inpAddress').value = '';
@@ -630,8 +945,10 @@ function removeCandidate(id){
 
 function render(){
   const filterVal = document.getElementById('schoolFilter').value;
+  const typeVal = document.getElementById('typeFilter').value;
   let sorted = [...candidates].sort((a,b) => b.score - a.score);
   if(filterVal) sorted = sorted.filter(c => c.school === filterVal);
+  if(typeVal) sorted = sorted.filter(c => (c.type || 'house') === typeVal);
 
   const body = document.getElementById('resultBody');
   const empty = document.getElementById('emptyMsg');
@@ -641,13 +958,14 @@ function render(){
     empty.style.display = 'block';
     empty.textContent = candidates.length === 0
       ? 'まだ候補物件が登録されていません。上のフォームから追加してください。'
-      : 'この小学校区に該当する候補物件はありません。';
+      : '該当する候補物件はありません。';
   } else {
     empty.style.display = 'none';
     body.innerHTML = sorted.map(c => `
       <tr>
         <td><span class="badge ${c.priority}">${priorityLabel(c.priority)}</span></td>
         <td><span class="score-num">${c.score}</span></td>
+        <td><span class="type-tag ${c.type || 'house'}">${typeLabel(c.type)}</span></td>
         <td>${escapeHtml(c.address)}</td>
         <td>${c.school ? `<span class="school-tag">${escapeHtml(c.school)}小</span>` : '<span style="color:var(--slate); font-size:12px;">不明</span>'}</td>
         <td style="font-size:12.5px; color:var(--slate);">${c.checks.map(escapeHtml).join('　/　') || '—'}</td>
