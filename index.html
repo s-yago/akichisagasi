@@ -705,12 +705,12 @@ function chooseZoomAndTiles(bbox){
 async function fetchTileAsBase64(x, y, z){
   const url = `https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/${z}/${x}/${y}.jpg`;
   const res = await fetch(url);
-  if(!res.ok) throw new Error('tile fetch failed');
+  if(!res.ok) throw new Error(`タイル取得エラー HTTP ${res.status}`);
   const blob = await res.blob();
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = reject;
+    reader.onerror = () => reject(new Error('画像の読み込みに失敗'));
     reader.readAsDataURL(blob);
   });
 }
@@ -814,6 +814,7 @@ async function startAiScan(){
   progress.classList.add('show');
 
   let found = 0, failed = 0;
+  let firstErrorMsg = '';
   for(let i = 0; i < tiles.length; i++){
     if(aiCancelFlag){
       progress.textContent = `中断しました（${i}/${tiles.length}枚処理・${found}件検出）`;
@@ -846,11 +847,13 @@ async function startAiScan(){
       }
     } catch(e){
       failed++;
+      if(!firstErrorMsg) firstErrorMsg = (e && e.message) ? e.message : String(e);
     }
   }
 
   if(!aiCancelFlag){
-    progress.textContent = `完了：${tiles.length}枚を解析し、${found}件の候補を検出しました（取得失敗：${failed}枚）`;
+    const errorNote = failed > 0 ? `／エラー例：「${firstErrorMsg}」` : '';
+    progress.textContent = `完了：${tiles.length}枚を解析し、${found}件の候補を検出しました（取得失敗：${failed}枚${errorNote}）`;
   }
   document.getElementById('aiScanBtn').style.display = 'inline-block';
   document.getElementById('aiCancelBtn').style.display = 'none';
